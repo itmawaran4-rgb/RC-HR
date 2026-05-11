@@ -564,8 +564,8 @@ ul { list-style: none; }
 /* ── Topbar ── */
 .topbar {
   height: var(--topbar-height);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: #ff9800; /* اللون البرتقالي */
+  border-bottom: 1px solid rgba(0,0,0,0.1); /* تعديل الشفافية لتناسب البرتقالي */
   display: flex;
   align-items: center;
   padding: 0 28px;
@@ -583,11 +583,10 @@ ul { list-style: none; }
   cursor: pointer;
   padding: 4px;
 }
-.topbar-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
+.topbar-title, 
+.topbar-date, 
+.topbar-hamburger {
+  color: #000000 !important;
 }
 .topbar-spacer { flex: 1; }
 .topbar-date {
@@ -596,12 +595,12 @@ ul { list-style: none; }
 }
 .topbar-avatar {
   width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--gold-500), var(--gold-600));
+  background: #000000; /* خلفية سوداء للأفاتار لتتناسق مع النص */
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  color: var(--navy-900);
+  color: #ff9800; /* نص برتقالي داخل الأفاتار */
   cursor: pointer;
   flex-shrink: 0;
 }

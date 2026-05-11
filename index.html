@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — چوونەژوورەوە</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HR MAWARAN">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .login-container { flex-direction: row-reverse; }
+    .brand-feature { flex-direction: row-reverse; }
+    .input-icon-wrap .input-icon { right: auto; left: 14px; }
+    .input-icon-wrap input { padding: 12px 16px 12px 44px; }
+    .login-brand { text-align: right; }
+    .brand-logo { flex-direction: row-reverse; }
+    .brand-headline, .brand-desc { text-align: right; }
+    .brand-features { align-items: flex-end; }
+    .form-label { text-align: right; display: block; }
+    .error-msg { flex-direction: row-reverse; }
+    @media (max-width: 768px) { .login-container { flex-direction: column; } }
+    .company-logo-img { height: 52px; width: auto; object-fit: contain; }
+  </style>
+</head>
+<body>
+<div class="login-page">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="login-container">
+
+    <!-- Brand Panel -->
+    <div class="login-brand">
+      <div class="brand-logo" style="margin-bottom:28px">
+        <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+             onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'">
+        <div id="logoFallback" style="display:none;align-items:center;gap:12px">
+          <div class="brand-icon">🏢</div>
+          <div>
+            <div class="brand-name">HR MAWARAN</div>
+            <div class="brand-sub">بەڕێوەبردنی کارمەندان</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /login-brand -->
+
+    <!-- Form Panel -->
+    <div class="login-form-panel">
+      <h2 class="form-title" style="text-align:right">بەخێربێیتەوە</h2>
+      <p class="form-subtitle" style="text-align:right">بچۆ ژوورەوە بۆ بەردەوامبوون</p>
+      <div class="role-tabs" style="direction:ltr">
+        <button class="role-tab active" id="tabEmployee" onclick="switchRole('employee')">👤 کارمەند</button>
+        <button class="role-tab" id="tabAdmin" onclick="switchRole('admin')">🛡️ ئەدمین</button>
+      </div>
+      <div class="error-msg" id="loginError">
+        <span>⚠</span>
+        <span id="loginErrorText">زانیارییەکان هەڵەن. تکایە دووبارە هەوڵبدەرەوە.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginId" id="idLabel">ناسنامەی کارمەند</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" class="form-control" id="loginId" placeholder="ناسنامەکەت بنووسە" autocomplete="username">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">وشەی نهێنی</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" class="form-control" id="loginPassword" placeholder="وشەی نهێنیت بنووسە" autocomplete="current-password">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" id="loginBtn" onclick="doLogin()">چوونەژوورەوە</button>
+      <p class="text-muted text-sm" style="text-align:center;margin-top:20px">ئەگەر وشەی نهێنیت بیرچووەوە، پەیوەندی بە HR بکە</p>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="assets/script.js?v=4"></script>
+<script>
+  let currentRole = 'employee';
+  window.addEventListener('DOMContentLoaded', () => {
+    const user = Session.get();
+    if (user) redirectUser(user);
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('loginId').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  });
+  function switchRole(role) {
+    currentRole = role;
+    document.getElementById('tabEmployee').classList.toggle('active', role === 'employee');
+    document.getElementById('tabAdmin').classList.toggle('active', role === 'admin');
+    document.getElementById('idLabel').textContent = role === 'admin' ? 'ناسنامەی ئەدمین' : 'ناسنامەی کارمەند';
+    document.getElementById('loginId').placeholder = role === 'admin' ? 'ناسنامەی ئەدمین بنووسە' : 'ناسنامەکەت بنووسە';
+    hideError();
+  }
+  async function doLogin() {
+    const id = document.getElementById('loginId').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    hideError();
+    if (!id || !password) { showError('تکایە ناسنامە و وشەی نهێنی بنووسە.'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> چاوەڕێبکە...';
+    try {
+      const res = await API.login(id, password, currentRole);
+      if (res.success && res.data) {
+        const user = { ...res.data, role: currentRole };
+        Session.set(user);
+        Toast.success('بەخێربێیتەوە!', `مەرحەبا، ${user.name || id}`);
+        setTimeout(() => redirectUser(user), 600);
+      } else {
+        showError(res.message || 'زانیارییەکان هەڵەن. تکایە دووبارە هەوڵبدەرەوە.');
+      }
+    } catch (e) {
+      showError('پەیوەندی سەرکەوتوو نەبوو. تکایە نێتووەرکەکەت بپشکنە.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'چوونەژوورەوە';
+    }
+  }
+  function redirectUser(user) { window.location.href = user.role === 'admin' ? 'admin.html' : 'attendance.html'; }
+  function showError(msg) { document.getElementById('loginErrorText').textContent = msg; document.getElementById('loginError').classList.add('show'); }
+  function hideError() { document.getElementById('loginError').classList.remove('show'); }
+</script>
+</body>
+</html>

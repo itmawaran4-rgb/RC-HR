@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — داواکاری مۆڵەت</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right:0;left:auto;transform:translateX(100%); }
+    .sidebar.open { transform:translateX(0); }
+    .main-content { margin-right:260px;margin-left:0; }
+    .topbar { flex-direction:row-reverse; }
+    .topbar-title { margin-right:12px;margin-left:0; }
+    .nav-item { flex-direction:row-reverse;text-align:right; }
+    .nav-icon { margin-right:0;margin-left:10px; }
+    .sidebar-header { flex-direction:row-reverse; }
+    .sidebar-user { text-align:right; }
+    .page-header { text-align:right; }
+    .card-header { flex-direction:row-reverse; }
+    .card-title { flex-direction:row-reverse; }
+    .form-label { text-align:right;display:block; }
+    @media(max-width:768px){
+      .sidebar{right:0;left:auto;transform:translateX(110%);}
+      .sidebar.open{transform:translateX(0);}
+      .main-content{margin-right:0;}
+    }
+    .company-logo-img{height:36px;width:auto;object-fit:contain;}
+    .leave-year-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;}
+    .leave-count{font-size:48px;font-weight:700;color:var(--gold-500);}
+    .leave-count-label{color:var(--text-muted);font-size:14px;margin-top:4px;}
+    .request-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-bottom:12px;}
+    .request-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-direction:row-reverse;}
+    .request-dates{color:var(--text-muted);font-size:13px;margin-bottom:6px;text-align:right;}
+    .request-reason{font-size:14px;color:var(--text-secondary);text-align:right;}
+    .leave-type-btn{
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+      padding:12px 8px;border:2px solid var(--border-color);border-radius:10px;
+      background:var(--bg-card);color:var(--text-primary);cursor:pointer;
+      font-size:13px;font-weight:600;transition:all 0.2s;
+    }
+    .leave-type-btn:hover{border-color:var(--gold-500);}
+    .leave-type-btn.active{border-color:var(--gold-500);background:rgba(245,158,11,0.1);color:var(--gold-500);}
+  </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text"><div class="brand-name">HR MAWARAN</div><div class="brand-sub">پۆرتاڵی کارمەند</div></div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item active" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
+  </div>
+</aside>
+
+<div class="main-content">
+  <header class="topbar">
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">مۆڵەتەکانم</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+  </header>
+  <main class="page-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-direction:row-reverse;flex-wrap:wrap;gap:12px">
+      <div style="text-align:right">
+        <h1 class="page-title">داواکاری مۆڵەت</h1>
+        <p class="page-subtitle">داواکاریەکانی مۆڵەتی ساڵی ئێستا</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('leaveModal')">➕ داواکاری مۆڵەتی نوێ</button>
+    </div>
+
+    <!-- Leave Balance -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px">
+      <div class="leave-year-card" style="border:2px solid var(--gold-500)">
+        <div class="leave-count" id="leaveTotalDays">—</div>
+        <div class="leave-count-label">📅 کۆی ڕۆژەکانی مۆڵەت</div>
+      </div>
+      <div class="leave-year-card" style="border:2px solid #3b82f6">
+        <div class="leave-count" id="leaveTotalHours" style="color:#3b82f6">—</div>
+        <div class="leave-count-label">⏰ کۆی کاتژمێرەکان</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+      <div class="leave-year-card">
+        <div style="font-size:28px;font-weight:700;color:var(--gold-500)" id="leaveApproved">—</div>
+        <div class="leave-count-label">✅ مۆڵەتکراو</div>
+      </div>
+      <div class="leave-year-card">
+        <div style="font-size:28px;font-weight:700;color:var(--gold-500)" id="leavePending">—</div>
+        <div class="leave-count-label">⏳ چاوەڕێی مۆڵەت</div>
+      </div>
+      <div class="leave-year-card">
+        <div style="font-size:28px;font-weight:700;color:var(--rose-500,#f43f5e)" id="leaveRejected">—</div>
+        <div class="leave-count-label">❌ ڕەتکراوەتەوە</div>
+      </div>
+    </div>
+
+    <!-- Requests list -->
+    <div class="card">
+      <div class="card-header" style="flex-direction:row-reverse">
+        <div class="card-title"><div class="card-title-icon gold">🌴</div>داواکاریەکانم</div>
+        <button class="btn btn-secondary btn-sm" onclick="loadLeaves()">🔄 نوێکردنەوە</button>
+      </div>
+      <div id="leavesList" style="padding:16px">
+        <div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>بارکراوەن...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Leave Request Modal -->
+<div class="modal-overlay" id="leaveModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🌴 داواکاری مۆڵەتی نوێ</div>
+      <button class="modal-close" onclick="closeModal('leaveModal')">×</button>
+    </div>
+    <div style="padding:0 20px">
+      <!-- نوع المجازة -->
+      <div class="form-group">
+        <label class="form-label">جۆری مۆڵەت *</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px" id="leaveTypePicker">
+          <button type="button" class="leave-type-btn active" data-type="annual" onclick="selectLeaveType('annual')">
+            <span style="font-size:20px">🌴</span>
+            <span>ساڵانە</span>
+          </button>
+          <button type="button" class="leave-type-btn" data-type="sick" onclick="selectLeaveType('sick')">
+            <span style="font-size:20px">🏥</span>
+            <span>نەخۆشی</span>
+          </button>
+          <button type="button" class="leave-type-btn" data-type="hourly" onclick="selectLeaveType('hourly')">
+            <span style="font-size:20px">⏰</span>
+            <span>کاتژمێری</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ساڵانە: ئەم بواری تەنها بۆ ساڵانە دەردەکەوێت -->
+      <div id="leaveDateFields">
+        <div class="form-group">
+          <label class="form-label">بەرواری دەستپێکردن *</label>
+          <input type="date" class="form-control" id="leaveFrom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">بەرواری کۆتایی *</label>
+          <input type="date" class="form-control" id="leaveTo">
+        </div>
+      </div>
+
+      <!-- کاتژمێری: تەنها کات -->
+      <div id="leaveTimeFields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">کاتی دەستپێکردن *</label>
+          <input type="time" class="form-control" id="leaveTimeFrom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">کاتی کۆتایی *</label>
+          <input type="time" class="form-control" id="leaveTimeTo">
+        </div>
+      </div>
+
+      <!-- نەخۆشی: ئایام یان کات (یەکێک پێویستە) -->
+      <div id="leaveSickFields" style="display:none">
+        <div style="background:rgba(59,130,246,0.07);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#3b82f6">
+          ℹ️ یەکێک لەم دووەیە پڕ بکەرەوە — ئایام یان کاتژمێر
+        </div>
+        <!-- ئایام -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">بەرواری دەستپێکردن</label>
+            <input type="date" class="form-control" id="sickFrom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">بەرواری کۆتایی</label>
+            <input type="date" class="form-control" id="sickTo">
+          </div>
+        </div>
+        <!-- خط فاصل -->
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px">
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+          <span style="font-size:12px;color:var(--text-muted)">یان</span>
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+        </div>
+        <!-- کاتژمێر -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">کاتی دەستپێکردن</label>
+            <input type="time" class="form-control" id="sickTimeFrom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">کاتی کۆتایی</label>
+            <input type="time" class="form-control" id="sickTimeTo">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">هۆکار / تێبینی</label>
+        <textarea class="form-control" id="leaveReason" rows="3" placeholder="هۆکاری داواکاریەکەت بنووسە..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('leaveModal')">هەڵوەشاندنەوە</button>
+      <button class="btn btn-primary" id="leaveSaveBtn" onclick="submitLeave()">📤 ناردنی داواکاری</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/script.js?v=4"></script>
+<script>
+const leaveTypeLabels = {
+  annual:  'مۆڵەتی ساڵانە',
+  sick:    'مۆڵەتی نەخۆشی',
+  hourly:  'مۆڵەتی کاتژمێری'
+};
+
+let selectedLeaveType = 'annual';
+
+function selectLeaveType(type) {
+  selectedLeaveType = type;
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  // show/hide sections
+  document.getElementById('leaveDateFields').style.display = type === 'annual'  ? 'block' : 'none';
+  document.getElementById('leaveTimeFields').style.display = type === 'hourly'  ? 'block' : 'none';
+  document.getElementById('leaveSickFields').style.display = type === 'sick'    ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  requireAuth(false);
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('leaveFrom').value    = today;
+  document.getElementById('leaveTo').value      = today;
+  document.getElementById('sickFrom').value     = today;
+  document.getElementById('sickTo').value       = today;
+  document.getElementById('leaveTimeFrom').value = '08:00';
+  document.getElementById('leaveTimeTo').value   = '10:00';
+  await loadLeaves();
+});
+
+async function loadLeaves() {
+  const user = Session.get();
+  const listEl = document.getElementById('leavesList');
+  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>بارکراوەن...</div>`;
+  try {
+    // Fetch requests + approved leave balance in parallel
+    const [reqRes, lvRes] = await Promise.all([
+      API.getRequests({ employeeId: user.id, type: 'leave' }),
+      API.getLeaves({ employeeId: user.id })
+    ]);
+
+    // ── Balance from Leaves sheet ──
+    if (lvRes.success) {
+      const lvData = lvRes.data || [];
+      const totalDays  = lvData.reduce((s, r) => s + (parseFloat(r.days)  || 0), 0);
+      const totalHours = lvData.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0);
+      document.getElementById('leaveTotalDays').textContent  = totalDays.toFixed(1).replace('.0','');
+      document.getElementById('leaveTotalHours').textContent = totalHours.toFixed(1).replace('.0','');
+    }
+
+    if (!reqRes.success) throw new Error(reqRes.message);
+    const year = new Date().getFullYear();
+    const all  = reqRes.data || [];
+    const thisYear = all.filter(r => r.date && r.date.startsWith(String(year)));
+
+    document.getElementById('leaveApproved').textContent = thisYear.filter(r => r.status === 'approved').length;
+    document.getElementById('leavePending').textContent  = thisYear.filter(r => r.status === 'pending').length;
+    document.getElementById('leaveRejected').textContent = thisYear.filter(r => r.status === 'rejected').length;
+
+    if (!all.length) {
+      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🌴</div><div class="empty-title">هیچ داواکاریەکی مۆڵەت نیە</div><div class="empty-desc">داواکاری مۆڵەتی نوێ زیاد بکە</div></div>`;
+      return;
+    }
+
+    const sorted = [...all].sort((a,b) => new Date(b.date) - new Date(a.date));
+    listEl.innerHTML = sorted.map(r => {
+      let extra = {};
+      try { extra = JSON.parse(r.extra || '{}'); } catch(e){}
+      const from = extra.from || extra.date || r.date || '';
+      const to   = extra.to   || extra.date || r.date || '';
+      const daysLabel  = extra.days  ? ` · ${extra.days} ڕۆژ`   : '';
+      const hoursLabel = extra.timeFrom ? ` · ${extra.timeFrom} → ${extra.timeTo}` : '';
+      const statusBadge = r.status === 'approved'
+        ? '<span class="badge badge-green">✅ مۆڵەتکراو</span>'
+        : r.status === 'rejected'
+          ? '<span class="badge badge-muted" style="background:rgba(244,63,94,0.15);color:#f43f5e">❌ ڕەتکراوەتەوە</span>'
+          : '<span class="badge badge-gold">⏳ چاوەڕێی مۆڵەت</span>';
+      return `<div class="request-card">
+        <div class="request-card-header">
+          <div>${statusBadge}</div>
+          <div style="font-weight:600">${leaveTypeLabels[extra.leaveType] || r.type || '—'}</div>
+        </div>
+        <div class="request-dates">📅 ${from}${to && to !== from ? ' → ' + to : ''}${daysLabel}${hoursLabel}</div>
+        <div class="request-reason">${escapeHtml(r.message || '—')}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">هەڵە</div><div class="empty-desc">${e.message}</div></div>`;
+  }
+}
+
+async function submitLeave() {
+  const user   = Session.get();
+  const type   = selectedLeaveType;
+  const reason = document.getElementById('leaveReason').value.trim();
+  const btn    = document.getElementById('leaveSaveBtn');
+  let msgText, extraData;
+
+  if (type === 'annual') {
+    // ── ساڵانە: ئایام تەنها ──
+    const from = document.getElementById('leaveFrom').value;
+    const to   = document.getElementById('leaveTo').value;
+    if (!from || !to) { Toast.warning('تێبینی', 'تکایە بەروارەکان پڕبکەرەوە'); return; }
+    if (new Date(to) < new Date(from)) { Toast.warning('تێبینی', 'بەرواری کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
+    const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+    msgText   = `مۆڵەتی ساڵانە | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
+    extraData = { from, to, days, leaveType: 'annual', reason };
+
+  } else if (type === 'hourly') {
+    // ── کاتژمێری: کات تەنها ──
+    const tFrom = document.getElementById('leaveTimeFrom').value;
+    const tTo   = document.getElementById('leaveTimeTo').value;
+    if (!tFrom || !tTo) { Toast.warning('تێبینی', 'تکایە کاتەکان پڕبکەرەوە'); return; }
+    if (tTo <= tFrom)   { Toast.warning('تێبینی', 'کاتی کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
+    const [h1,m1] = tFrom.split(':').map(Number);
+    const [h2,m2] = tTo.split(':').map(Number);
+    const hrs = ((h2*60+m2) - (h1*60+m1)) / 60;
+    const today = new Date().toISOString().split('T')[0];
+    msgText   = `مۆڵەتی کاتژمێری | ${tFrom} → ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
+    extraData = { timeFrom: tFrom, timeTo: tTo, hours: hrs, leaveType: 'hourly', date: today, reason };
+
+  } else {
+    // ── نەخۆشی: ئایام یان کات (یەکێک پێویستە) ──
+    const from    = document.getElementById('sickFrom').value;
+    const to      = document.getElementById('sickTo').value;
+    const tFrom   = document.getElementById('sickTimeFrom').value;
+    const tTo     = document.getElementById('sickTimeTo').value;
+    const hasDays = from && to;
+    const hasTime = tFrom && tTo;
+
+    if (!hasDays && !hasTime) {
+      Toast.warning('تێبینی', 'تکایە ئایام یان کاتژمێر پڕبکەرەوە');
+      return;
+    }
+    if (hasDays && new Date(to) < new Date(from)) {
+      Toast.warning('تێبینی', 'بەرواری کۆتایی نابێت پێش دەستپێکردن بێت');
+      return;
+    }
+    if (hasTime && tTo <= tFrom) {
+      Toast.warning('تێبینی', 'کاتی کۆتایی نابێت پێش دەستپێکردن بێت');
+      return;
+    }
+
+    if (hasDays) {
+      const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+      msgText   = `مۆڵەتی نەخۆشی | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
+      extraData = { from, to, days, leaveType: 'sick', reason };
+    } else {
+      const [h1,m1] = tFrom.split(':').map(Number);
+      const [h2,m2] = tTo.split(':').map(Number);
+      const hrs = ((h2*60+m2) - (h1*60+m1)) / 60;
+      const today = new Date().toISOString().split('T')[0];
+      msgText   = `مۆڵەتی نەخۆشی (کاتژمێری) | ${tFrom} → ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
+      extraData = { timeFrom: tFrom, timeTo: tTo, hours: hrs, leaveType: 'sick', date: today, reason };
+    }
+  }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-sm"></span> ناردن...';
+  try {
+    const res = await API.addRequest({
+      employeeId: user.id,
+      name:       user.name,
+      type:       'leave_' + type,
+      message:    msgText,
+      extra:      JSON.stringify(extraData)
+    });
+    if (res.success) {
+      Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
+      closeModal('leaveModal');
+      document.getElementById('leaveReason').value = '';
+      selectedLeaveType = 'annual';
+      selectLeaveType('annual');
+      await loadLeaves();
+    } else throw new Error(res.message);
+  } catch(e) {
+    Toast.error('ناردن سەرکەوتوو نەبوو', e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '📤 ناردنی داواکاری';
+  }
+}
+</script>
+</body>
+</html>

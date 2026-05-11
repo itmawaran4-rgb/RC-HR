@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — ڕاگەیاندنەکان</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .card-header { flex-direction: row-reverse; }
+    .card-title { flex-direction: row-reverse; }
+    @media (max-width: 768px) {
+      .sidebar { right: 0; left: auto; transform: translateX(110%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-right: 0; }
+    }
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+    .ann-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-right: 4px solid var(--gold-500);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .ann-title { font-weight: 700; font-size: 16px; color: var(--text-primary); margin-bottom: 10px; text-align: right; }
+    .ann-body  { color: var(--text-secondary); font-size: 14px; line-height: 1.8; text-align: right; white-space: pre-wrap; }
+    .ann-date  { color: var(--text-muted); font-size: 12px; margin-top: 12px; text-align: right; }
+  </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item active" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
+  </div>
+</aside>
+
+<div class="main-content">
+  <header class="topbar">
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">ڕاگەیاندنەکان</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+  </header>
+  <main class="page-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex-direction:row-reverse">
+      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 نوێکردنەوە</button>
+      <div style="text-align:right">
+        <h1 class="page-title">ڕاگەیاندنەکان</h1>
+        <p class="page-subtitle">ڕاگەیاندنە کۆمپانیاکان و مەسەلەکانی گرنگ</p>
+      </div>
+    </div>
+    <div id="annContainer">
+      <div class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-left:8px"></div>بارکراوە...</div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js?v=4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  requireAuth(false);
+  await loadAnnouncements();
+});
+
+async function loadAnnouncements() {
+  const container = document.getElementById('annContainer');
+  container.innerHTML = `<div class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-left:8px"></div>بارکراوە...</div>`;
+  try {
+    const res = await API.getAnnouncements();
+    if (!res.success) throw new Error(res.message);
+    const data = (res.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (!data.length) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon">📢</div><div class="empty-title">هیچ ڕاگەیاندنێک نیە</div><div class="empty-desc">ڕاگەیاندنەکانی تازە ئێرەدا دەردەکەون</div></div>`;
+      return;
+    }
+    container.innerHTML = data.map(ann => `
+      <div class="ann-card">
+        <div class="ann-title">📢 ${escapeHtml(ann.title || '—')}</div>
+        <div class="ann-body">${escapeHtml(ann.message || '')}</div>
+        <div class="ann-date">📅 ${formatDate(ann.date)}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = `<div class="loading-rows text-red">${e.message}</div>`;
+    Toast.error('هەڵە', e.message);
+  }
+}
+</script>
+</body>
+</html>

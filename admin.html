@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — Admin Dashboard</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- ═══════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR MAWARAN</div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Admin</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">HR Admin</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Dashboard</div>
+    <a class="nav-item active" data-tab="tab-overview" data-load="loadReports">
+      <span class="nav-icon">📊</span> Overview
+    </a>
+
+    <div class="nav-section-label">Management</div>
+    <a class="nav-item" data-tab="tab-employees" data-load="loadEmployees">
+      <span class="nav-icon">👥</span> Employees
+    </a>
+    <a class="nav-item" data-tab="tab-attendance" data-load="loadAttendance">
+      <span class="nav-icon">🕐</span> Attendance
+    </a>
+    <a class="nav-item" data-tab="tab-salary" data-load="loadSalary">
+      <span class="nav-icon">💰</span> Salary & Bonuses
+    </a>
+    <a class="nav-item" data-tab="tab-announcements" data-load="loadAnnouncements">
+      <span class="nav-icon">📢</span> Announcements
+    </a>
+    <a class="nav-item" data-tab="tab-requests" data-load="loadRequests">
+      <span class="nav-icon">📋</span> Requests
+      <span class="badge badge-gold" id="pendingRequestsBadge" style="margin-right:auto;font-size:11px"></span>
+    </a>
+    <a class="nav-item" data-tab="tab-leaves" data-load="loadLeaveBalance">
+      <span class="nav-icon">🌴</span> Leave Balance
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════ -->
+<div class="main-content">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title" id="topbarTitleEl">Overview</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">HR</div>
+  </header>
+
+  <main class="page-content">
+
+    <!-- ══════════════════════════════
+         TAB: OVERVIEW / REPORTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content active" id="tab-overview">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Dashboard Overview</h1>
+          <p class="page-subtitle" id="overviewSubtitle">Today's attendance &amp; monthly report</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadOverview()">🔄 Refresh</button>
+      </div>
+
+      <!-- ── SECTION 1: Today's Attendance ── -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon green">🕐</div>Today's Attendance</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-green" id="todayPresentBadge">— Present</span>
+            <span class="badge badge-muted" id="todayAbsentBadge">— Absent</span>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>⏱️ Hours</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="todayAttBody">
+              <tr><td colspan="6" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: Monthly Summary ── -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon blue">📊</div>Monthly Report</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="month" class="form-control" id="reportMonth" style="width:160px;padding:6px 10px">
+            <button class="btn btn-secondary btn-sm" onclick="renderMonthlyReport()">Go</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Days Present</th>
+                <th>Avg Check-In</th>
+                <th>Avg Check-Out</th>
+                <th>⏱️ Avg Hours</th>
+                <th>Leave Days (Year)</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyReportBody">
+              <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: EMPLOYEE DETAIL
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-emp-detail">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <button class="btn btn-ghost btn-sm" onclick="switchAdminTab('tab-overview','loadOverview','Overview')" style="margin-bottom:8px">← Back</button>
+          <h1 class="page-title" id="detailEmpName">Employee Detail</h1>
+          <p class="page-subtitle" id="detailEmpInfo">—</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="month" class="form-control" id="detailMonth" style="width:160px;padding:6px 10px">
+          <button class="btn btn-secondary btn-sm" onclick="renderEmpDetail()">Go</button>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="stats-grid" style="margin-bottom:20px">
+        <div class="stat-card green">
+          <div class="stat-info">
+            <div class="stat-label">Days Present</div>
+            <div class="stat-value" id="detailDaysPresent">—</div>
+          </div>
+          <div class="stat-icon green">✅</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-info">
+            <div class="stat-label">Avg Check-In</div>
+            <div class="stat-value" id="detailAvgIn" style="font-size:20px">—</div>
+          </div>
+          <div class="stat-icon blue">🕐</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-info">
+            <div class="stat-label">Avg Check-Out</div>
+            <div class="stat-value" id="detailAvgOut" style="font-size:20px">—</div>
+          </div>
+          <div class="stat-icon gold">🕔</div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-info">
+            <div class="stat-label">Days Absent</div>
+            <div class="stat-value" id="detailDaysAbsent">—</div>
+          </div>
+          <div class="stat-icon rose">❌</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon blue">📋</div>Daily Records</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Status</th><th>Edit</th></tr>
+            </thead>
+            <tbody id="detailTableBody">
+              <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: EMPLOYEES
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-employees">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Employee Management</h1>
+          <p class="page-subtitle">Add, edit and manage your workforce</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddEmployee()">➕ Add Employee</button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="empSearch" placeholder="Search employees...">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadEmployees()">🔄 Refresh</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Position</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Hire Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody">
+            <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: ATTENDANCE
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-attendance">
+      <div class="page-header">
+        <h1 class="page-title">Attendance Records</h1>
+        <p class="page-subtitle">Track employee check-in and check-out history</p>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" class="form-control" id="attEmpFilter" placeholder="Filter by employee ID or name...">
+        <input type="date"  class="form-control" id="attDateFilter">
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendance()">🔄 Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('attEmpFilter').value='';document.getElementById('attDateFilter').value='';filterAttendance()">✕ Clear</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+            </tr>
+          </thead>
+          <tbody id="attTableBody">
+            <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: SALARY
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-salary">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Salary, Bonuses & Deductions</h1>
+          <p class="page-subtitle">Manage compensation records for all employees</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddSalary()">➕ Add Record</button>
+      </div>
+
+      <div class="filter-bar">
+        <select class="form-control" id="salEmpFilter">
+          <option value="">All Employees</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadSalary()">🔄 Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('salEmpFilter').value='';filterSalary()">✕ Clear</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Emp. ID</th>
+              <th>Name</th>
+              <th>Bonus</th>
+              <th>Deduction</th>
+              <th>Notes</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="salTableBody">
+            <tr><td colspan="7" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: ANNOUNCEMENTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-announcements">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Announcements</h1>
+          <p class="page-subtitle">Publish company-wide notices and updates</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddAnnouncement()">➕ New Announcement</button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="annSearch" placeholder="Search announcements...">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
+      </div>
+
+      <div id="annList">
+        <div class="loading-rows">Loading...</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: REQUESTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-requests">
+      <div class="page-header">
+        <h1 class="page-title">Pending Requests</h1>
+        <p class="page-subtitle">Leave requests & outside-office attendance approvals</p>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="role-tabs" style="margin-bottom:20px">
+        <button class="role-tab active" id="reqTabAll"    onclick="filterRequestsTab('all')">📋 All</button>
+        <button class="role-tab"        id="reqTabLeave"  onclick="filterRequestsTab('leave')">🌴 Leave</button>
+        <button class="role-tab"        id="reqTabOutside" onclick="filterRequestsTab('outside')">📍 Outside Office</button>
+      </div>
+
+      <div id="requestsList">
+        <div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading...</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: LEAVE BALANCE
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-leaves">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Leave Balance</h1>
+          <p class="page-subtitle">Approved leave days & hours per employee</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openAddLeave()">➕ Add Leave</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadLeaveBalance()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon gold">🌴</div>All Employees — Leave Summary</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Annual Days</th>
+                <th>Sick Days</th>
+                <th>Hourly Hours</th>
+                <th>Total Days</th>
+                <th>Total Hours</th>
+              </tr>
+            </thead>
+            <tbody id="leaveBalanceBody">
+              <tr><td colspan="7" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- ═══════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════ -->
+
+<!-- Employee Modal -->
+<div class="modal-overlay" id="empModal" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="empModalTitle">Add New Employee</div>
+      <button class="modal-close" onclick="closeModal('empModal')">×</button>
+    </div>
+    <form id="empForm" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Employee ID *</label>
+          <input type="text" class="form-control" id="empId" placeholder="e.g. EMP001" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-control" id="empName" placeholder="Full name" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <input type="text" class="form-control" id="empDepartment" placeholder="e.g. Engineering" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Position</label>
+          <input type="text" class="form-control" id="empPosition" placeholder="e.g. Senior Developer">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-control" id="empPhone" placeholder="+1 234 567 8900">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="empEmail" placeholder="email@company.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hire Date</label>
+          <input type="date" class="form-control" id="empHireDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input type="password" class="form-control" id="empPassword" placeholder="Set login password" required>
+        </div>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal-overlay" id="annModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="annModalTitle">New Announcement</div>
+      <button class="modal-close" onclick="closeModal('annModal')">×</button>
+    </div>
+    <form id="annForm" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-control" id="annTitle" placeholder="Announcement title" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message *</label>
+        <textarea class="form-control" id="annMessage" rows="5" placeholder="Write your announcement..." required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="annDate">
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('annModal')">Cancel</button>
+      <button class="btn btn-primary" id="annSaveBtn" onclick="saveAnnouncement()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Salary Modal -->
+<div class="modal-overlay" id="salModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="salModalTitle">Add Bonus / Deduction</div>
+      <button class="modal-close" onclick="closeModal('salModal')">×</button>
+    </div>
+    <form id="salForm" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Employee *</label>
+        <select class="form-control" id="salEmployeeId" required>
+          <option value="">Select Employee</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Bonus Amount</label>
+          <input type="number" class="form-control" id="salBonus" placeholder="0.00" min="0" step="0.01" value="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deduction Amount</label>
+          <input type="number" class="form-control" id="salDeduction" placeholder="0.00" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="salNotes" rows="3" placeholder="Reason or additional notes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="salDate">
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('salModal')">Cancel</button>
+      <button class="btn btn-primary" id="salSaveBtn" onclick="saveSalary()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Edit/Add Modal -->
+<div class="modal-overlay" id="attEditModal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title" id="attEditTitle">Edit Attendance</div>
+      <button class="modal-close" onclick="closeModal('attEditModal')">×</button>
+    </div>
+    <div style="padding:0 20px 4px">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px" id="attEditMeta"></div>
+      <div class="form-group">
+        <label class="form-label">Check-In Time</label>
+        <input type="time" class="form-control" id="attEditIn" step="1">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">اتركه فارغاً إذا لا يوجد</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Check-Out Time</label>
+        <input type="time" class="form-control" id="attEditOut" step="1">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">اتركه فارغاً إذا لا يوجد</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('attEditModal')">Cancel</button>
+      <button class="btn btn-primary" id="attEditSaveBtn" onclick="saveAttEdit()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Detail Modal -->
+<div class="modal-overlay" id="leaveDetailModal" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="leaveDetailTitle">Leave Records</div>
+      <button class="modal-close" onclick="closeModal('leaveDetailModal')">×</button>
+    </div>
+    <div style="padding:0 20px 20px;overflow-x:auto" id="leaveDetailBody">
+      <div class="loading-rows">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Manual Leave Entry Modal -->
+<div class="modal-overlay" id="addLeaveModal" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">🌴 Add Leave Manually</div>
+      <button class="modal-close" onclick="closeModal('addLeaveModal')">×</button>
+    </div>
+    <div style="padding:0 20px 8px">
+      <div class="form-group">
+        <label class="form-label">Employee *</label>
+        <select class="form-control" id="addLeaveEmpId">
+          <option value="">Select Employee</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Leave Type *</label>
+        <select class="form-control" id="addLeaveType">
+          <option value="annual">🌴 Annual Leave</option>
+          <option value="sick">🏥 Sick Leave</option>
+          <option value="hourly">⏰ Hourly Leave</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">From *</label>
+          <input type="date" class="form-control" id="addLeaveFrom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">To</label>
+          <input type="date" class="form-control" id="addLeaveTo">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Days</label>
+          <input type="number" class="form-control" id="addLeaveDays" min="0" step="0.5" placeholder="e.g. 2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hours</label>
+          <input type="number" class="form-control" id="addLeaveHours" min="0" step="0.5" placeholder="e.g. 8">
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:-8px;margin-bottom:12px">
+        ℹ️ 8 hours = 1 day. If Days is empty, it's calculated from Hours automatically.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="addLeaveNotes" rows="2" placeholder="Optional reason..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addLeaveModal')">Cancel</button>
+      <button class="btn btn-primary" id="addLeaveSaveBtn" onclick="saveManualLeave()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Photo Lightbox -->
+<div id="photoLightbox" onclick="closePhotoLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out;padding:20px">
+  <button onclick="closePhotoLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+  <img id="lightboxImg" src="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+</div>
+
+<style>
+/* ── Request card layout ── */
+.req-card .req-inner {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  align-items: flex-start;
+}
+.req-body {
+  flex: 1;
+  min-width: 0;
+}
+.req-photo-wrap {
+  flex-shrink: 0;
+  width: 160px;
+}
+.req-photo-thumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: zoom-in;
+  transition: opacity 0.2s;
+}
+.req-photo-thumb:hover { opacity: 0.85; }
+
+/* Mobile: photo goes below */
+@media (max-width: 640px) {
+  .req-card .req-inner {
+    flex-direction: column;
+  }
+  .req-photo-wrap {
+    width: 100%;
+  }
+  .req-photo-thumb {
+    width: 100%;
+    height: 200px;
+  }
+}
+</style>
+
+<script src="assets/script.js?v=4"></script>
+<script src="assets/admin.js"></script>
+<script>
+/**
+ * Helper to switch admin tab from quick-action buttons or external calls
+ */
+function switchAdminTab(tabId, loadFn, title) {
+  // Update active sidebar item
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  // Update topbar title
+  document.getElementById('topbarTitleEl').textContent = title || 'Dashboard';
+  // Show tab
+  showAdminTab(tabId, loadFn);
+}
+
+// Update topbar title on tab switch
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const titles = {
+      'tab-overview':      'Overview',
+      'tab-employees':     'Employees',
+      'tab-attendance':    'Attendance',
+      'tab-salary':        'Salary & Bonuses',
+      'tab-announcements': 'Announcements',
+      'tab-emp-detail':    'Employee Detail',
+      'tab-requests':      'Requests'
+    };
+    document.getElementById('topbarTitleEl').textContent = titles[btn.dataset.tab] || 'Dashboard';
+  });
+});
+</script>
+</body>
+</html>

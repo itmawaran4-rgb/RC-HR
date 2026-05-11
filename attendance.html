@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — ئامادەبوون</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .card-header { flex-direction: row-reverse; }
+    .card-title { flex-direction: row-reverse; }
+    @media (max-width: 768px) {
+      .sidebar { right: 0; left: auto; transform: translateX(110%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-right: 0; }
+    }
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+  </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
+  </div>
+</aside>
+
+<div class="main-content">
+  <header class="topbar">
+    <button onclick="location.reload()" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--gold-500);border-radius:10px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap" title="نوێکردنەوەی لاپەڕە">🔄</button>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">ئامادەبوون</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+  </header>
+  <main class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">بەدواداچوونی ئامادەبوون</h1>
+      <p class="page-subtitle">کاتی هاتنەژوورەوە و چوونەدەرەوەی ڕۆژانەت تۆمار بکە</p>
+    </div>
+
+    <!-- Clock -->
+    <div class="attendance-clock">
+      <div class="clock-display" id="clockDisplay">00:00:00</div>
+      <div class="clock-date" id="clockDate">چاوەڕێبکە...</div>
+      <div class="attendance-actions">
+        <button class="btn btn-success clock-btn" id="checkInBtn" onclick="doCheckIn()">✅ هاتنەژوورەوە</button>
+        <button class="btn btn-danger clock-btn" id="checkOutBtn" onclick="doCheckOut()" disabled>🔴 چوونەدەرەوە</button>
+      </div>
+      <div class="status-indicator" id="statusIndicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">ئەمڕۆ هێشتا نەهاتووەتەژوورەوە</span>
+      </div>
+    </div>
+
+    <!-- Today's Summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="stat-card green">
+        <div class="stat-info">
+          <div class="stat-label">کاتی هاتنەژوورەوە</div>
+          <div class="stat-value" id="todayCheckIn" style="font-size:22px">—</div>
+        </div>
+        <div class="stat-icon green">✅</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-info">
+          <div class="stat-label">کاتی چوونەدەرەوە</div>
+          <div class="stat-value" id="todayCheckOut" style="font-size:22px">—</div>
+        </div>
+        <div class="stat-icon blue">🔴</div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-title-icon blue">📋</div>
+          <span id="attCardTitle">مێژووی ئامادەبوون</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 نوێکردنەوە</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>بەروار</th>
+              <th>هاتنەژوورەوە</th>
+              <th>چوونەدەرەوە</th>
+              <th>دۆخ</th>
+            </tr>
+          </thead>
+          <tbody id="attHistoryBody">
+            <tr><td colspan="4" class="loading-rows">مێژوو بارکراوە...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Outside Office Modal -->
+<!-- Announcement Popup -->
+<div id="annPopupOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg-card);border-radius:16px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+    <div style="background:linear-gradient(135deg,var(--gold-500),#f97316);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📢</span>
+        <span style="font-weight:700;color:#000;font-size:15px">ڕاگەیاندنی نوێ</span>
+      </div>
+      <button onclick="dismissAnnPopup()" style="background:rgba(0,0,0,0.15);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:#000;display:flex;align-items:center;justify-content:center;font-weight:700">×</button>
+    </div>
+    <div style="padding:20px">
+      <div id="annPopupTitle" style="font-weight:700;font-size:17px;margin-bottom:10px;color:var(--text-primary);text-align:right"></div>
+      <div id="annPopupBody" style="color:var(--text-secondary);font-size:14px;line-height:1.7;text-align:right;white-space:pre-wrap"></div>
+    </div>
+    <div style="padding:0 20px 16px;text-align:left">
+      <a href="announcements.html" style="font-size:12px;color:var(--gold-500)">← بینینی هەموو ڕاگەیاندنەکان</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="outsideModal" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ دەرەوەی ئۆفیس</div>
+      <button class="modal-close" onclick="closeModal('outsideModal')">×</button>
+    </div>
+
+    <!-- Step 1: Warning -->
+    <div id="outsideStep1" style="padding:20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">📍</div>
+      <p id="outsideModalMsg" style="margin-bottom:12px;color:var(--text-muted);font-size:14px"></p>
+      <p style="color:var(--gold-500);font-weight:600;font-size:14px">دەتوانیت داواکاری بنێریت بۆ مۆڵەتی ئەدمین</p>
+    </div>
+
+    <!-- Step 2: Note + Camera -->
+    <div id="outsideStep2" style="display:none;padding:0 20px 8px">
+      <div style="padding:12px;background:rgba(245,158,11,0.08);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--gold-500);text-align:right">
+        ⚠️ <span id="outsideStep2Msg"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="text-align:right;display:block">
+          تێبینی / هۆکار <span style="color:#f43f5e">*</span>
+        </label>
+        <textarea class="form-control" id="outsideNote" rows="3"
+          placeholder="هۆکاری بوونت لە دەرەوەی ئۆفیس بنووسە..." style="text-align:right"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="text-align:right;display:block">
+          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">(ئارەزوومەندانە)</span>
+        </label>
+        <!-- Camera capture only (no gallery) -->
+        <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
+          style="display:none" onchange="onPhotoSelected(event)">
+        <div id="photoPreview" style="border:2px dashed var(--border-color);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:var(--bg-secondary)"
+          onclick="document.getElementById('outsidePhoto').click()">
+          <div style="font-size:36px;margin-bottom:8px">📷</div>
+          <div style="color:var(--text-muted);font-size:13px">کامێرا بکەوە و وێنە بگرە</div>
+        </div>
+        <img id="photoThumb" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
+        <button id="retakeBtn" style="display:none;margin-top:8px" class="btn btn-secondary btn-sm btn-block"
+          onclick="retakePhoto()">🔄 دووبارە وێنە بگرە</button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('outsideModal')">❌ هەڵوەشاندنەوە</button>
+      <!-- Step 1 button -->
+      <button class="btn btn-primary" id="outsideNextBtn" onclick="goToOutsideStep2()">داواکاری بنێرە →</button>
+      <!-- Step 2 button -->
+      <button class="btn btn-primary" id="outsideSendBtn" style="display:none" onclick="sendOutsideRequest()">📤 نێردنی داواکاری</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/script.js?v=4"></script>
+<script>
+let todayRecord = null;
+
+const COMPANY_LOCATION = {
+  lat: 36.15638865284262,
+  lng: 44.019461850607506,
+  maxDistance: 100
+};
+
+function calcDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('براوزەرەکەت پشتیوانی شوێن ناکات.')); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const dist = calcDistance(pos.coords.latitude, pos.coords.longitude, COMPANY_LOCATION.lat, COMPANY_LOCATION.lng);
+        resolve({ allowed: dist <= COMPANY_LOCATION.maxDistance, distance: Math.round(dist) });
+      },
+      err => {
+        const msgs = { 1: 'مۆڵەتی شوێن دەست پێ نەکراوە. تکایە مۆڵەتی شوێن بدە.', 2: 'شوێن بەردەست نیە. دووبارە هەوڵبدەرەوە.', 3: 'ئاگادارکردنەوەی شوێن کاتی تەواوکرد.' };
+        reject(new Error(msgs[err.code] || 'شوێن بەدەستنەهات.'));
+      },
+      { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
+    );
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = requireAuth(false);
+  if (!user) return;
+  startClock('clockDisplay', 'clockDate');
+  // تشغيل الاثنين بالتوازي — الإعلان لا ينتظر تحميل الحضور
+  Promise.all([loadAttendanceHistory(), showLatestAnnouncement()]);
+});
+
+async function loadAttendanceHistory() {
+  const user = Session.get();
+  document.getElementById('attHistoryBody').innerHTML =
+    `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
+  try {
+    // Fetch ALL attendance records
+    const res = await API.getAttendance({});
+    if (!res.success) throw new Error(res.message);
+
+    // ── Helper: extract yyyy-MM-dd from any date string ──
+    function parseDate(val) {
+      if (!val) return '';
+      const s = String(val);
+      // Already yyyy-MM-dd
+      const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (iso) return iso[1];
+      // Long Google Sheets date string e.g. "Tue Mar 10 2026 00:00:00 GMT+0300"
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        // Fix 1899 ghost dates — return empty
+        if (y < 1970) return '';
+        return `${y}-${m}-${day}`;
+      }
+      return s.substring(0,10);
+    }
+
+    // ── Helper: extract HH:mm:ss from any time/date string ──
+    function parseTime(val) {
+      if (!val) return '';
+      const s = String(val);
+      // Already HH:mm:ss
+      const t = s.match(/(\d{2}:\d{2}:\d{2})/);
+      if (t) return t[1];
+      // Google Sheets time stored as Date (1899-12-30 epoch)
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2,'0');
+        const m = String(d.getMinutes()).padStart(2,'0');
+        const sec = String(d.getSeconds()).padStart(2,'0');
+        return `${h}:${m}:${sec}`;
+      }
+      return s;
+    }
+
+    // ── Normalize all records ──
+    const allRecords = (res.data || []).map(r => ({
+      date:       parseDate(r.date || r.Date || r.DATE || ''),
+      checkIn:    parseTime(r.checkIn || r.CheckIn || r.CHECKIN || ''),
+      checkOut:   parseTime(r.checkOut || r.CheckOut || r.CHECKOUT || ''),
+      employeeId: String(r.employeeId || r.EmployeeID || r.employeeid || '').trim(),
+      name:       String(r.name || r.Name || '').trim()
+    }));
+
+    // ── Filter: match by employeeId OR by name (fallback) ──
+    const userId   = String(user.id   || '').trim().toLowerCase();
+    const userName = String(user.name || '').trim().toLowerCase();
+    const records = allRecords.filter(r =>
+      (r.employeeId && r.employeeId.toLowerCase() === userId) ||
+      (r.name       && r.name.toLowerCase()       === userName)
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+    const currentMonth = today.substring(0, 7); // yyyy-MM
+    const monthLabel = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const titleEl = document.getElementById('attCardTitle');
+    if (titleEl) titleEl.textContent = `مێژووی ئامادەبوون — ${monthLabel}`;
+    const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
+    todayRecord = todayRecords.length ? todayRecords[todayRecords.length - 1] : null;
+    updateTodayStatus(todayRecord);
+
+    // فلتر: شهر جاری تەنها
+    const monthRecords = records.filter(r => r.date && r.date.startsWith(currentMonth));
+    const sorted = [...monthRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const tbody = document.getElementById('attHistoryBody');
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">هیچ تۆمارێکی ئامادەبوون نیە</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = sorted.map(r => {
+      const complete = r.checkOut && r.checkOut !== '—' && r.checkOut !== '';
+      return `<tr>
+        <td class="bold">${formatDate(r.date)}</td>
+        <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
+        <td>${complete ? `<span class="badge badge-blue">${r.checkOut}</span>` : '<span class="badge badge-muted">—</span>'}</td>
+        <td>${complete
+          ? '<span class="badge badge-green">تەواو</span>'
+          : r.checkIn
+            ? '<span class="badge badge-gold">بەردەوامە</span>'
+            : '<span class="badge badge-muted">غایب</span>'
+        }</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('attHistoryBody').innerHTML =
+      `<tr><td colspan="4" class="loading-rows text-red">${e.message}</td></tr>`;
+    Toast.error('هەڵە', e.message);
+  }
+}
+
+function updateTodayStatus(record) {
+  const checkInBtn  = document.getElementById('checkInBtn');
+  const checkOutBtn = document.getElementById('checkOutBtn');
+  const statusDot   = document.getElementById('statusDot');
+  const statusText  = document.getElementById('statusText');
+  const todayCI     = document.getElementById('todayCheckIn');
+  const todayCO     = document.getElementById('todayCheckOut');
+
+  const hasCheckIn  = record && record.checkIn  && record.checkIn  !== '—' && record.checkIn  !== '';
+  const hasCheckOut = record && record.checkOut && record.checkOut !== '—' && record.checkOut !== '';
+  const isPendingIn  = hasCheckIn  && record.checkIn  === 'pending';
+  const isPendingOut = hasCheckOut && record.checkOut === 'pending';
+
+  if (!record || !hasCheckIn) {
+    checkInBtn.disabled = false; checkOutBtn.disabled = true;
+    statusDot.className = 'status-dot'; statusText.textContent = 'ئەمڕۆ هێشتا نەهاتووەتەژوورەوە';
+    todayCI.textContent = '—'; todayCO.textContent = '—';
+  } else if (hasCheckIn && !hasCheckOut) {
+    checkInBtn.disabled = true; checkOutBtn.disabled = false;
+    statusDot.className = 'status-dot checked-in';
+    statusText.textContent = isPendingIn
+      ? `⏳ چاوەڕێی مۆڵەت — هاتنەژوورەوە`
+      : `هاتوویتەژوورەوە لە ${record.checkIn}`;
+    todayCI.textContent = isPendingIn ? '⏳ pending' : record.checkIn;
+    todayCO.textContent = '—';
+  } else {
+    checkInBtn.disabled = true; checkOutBtn.disabled = true;
+    statusDot.className = 'status-dot';
+    statusDot.style.background = isPendingOut ? 'var(--gold-500)' : 'var(--blue-500)';
+    statusText.textContent = isPendingOut
+      ? `⏳ چاوەڕێی مۆڵەت — چوونەدەرەوە`
+      : `ڕۆژ تەواوبوو — ${record.checkIn} → ${record.checkOut}`;
+    todayCI.textContent  = isPendingIn  ? '⏳ pending' : record.checkIn;
+    todayCO.textContent  = isPendingOut ? '⏳ pending' : record.checkOut;
+  }
+}
+
+// Stores pending outside-office action
+let _pendingOutside = null;
+
+async function doCheckIn() {
+  const user = Session.get();
+  const btn = document.getElementById('checkInBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
+  try {
+    const loc = await checkLocation();
+    if (!loc.allowed) {
+      btn.disabled = false;
+      btn.innerHTML = '✅ هاتنەژوورەوە';
+      _pendingOutside = {
+        action: 'checkin',
+        loc,
+        requestTime: new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+        requestDate: new Date().toISOString().split('T')[0]
+      };
+      document.getElementById('outsideModalMsg').textContent =
+        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
+      openOutsideModal();
+      return;
+    }
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
+    const res = await API.checkIn(user.id, user.name);
+    if (res.success) {
+      const now = res.data && res.data.checkIn ? res.data.checkIn : new Date().toLocaleTimeString('en-GB');
+      Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}!`);
+      btn.disabled = true; btn.innerHTML = '✅ هاتنەژوورەوە';
+      document.getElementById('checkOutBtn').disabled = false;
+      document.getElementById('statusDot').className = 'status-dot checked-in';
+      document.getElementById('statusText').textContent = `هاتوویتەژوورەوە لە ${now}`;
+      document.getElementById('todayCheckIn').textContent = now;
+      document.getElementById('todayCheckOut').textContent = '—';
+      await loadAttendanceHistory();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('هاتنەژوورەوە سەرکەوتوو نەبوو', e.message);
+    btn.disabled = false; btn.innerHTML = '✅ هاتنەژوورەوە';
+  }
+}
+
+async function doCheckOut() {
+  const user = Session.get();
+  const btn = document.getElementById('checkOutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
+  try {
+    const loc = await checkLocation();
+    if (!loc.allowed) {
+      btn.disabled = false;
+      btn.innerHTML = '🔴 چوونەدەرەوە';
+      _pendingOutside = {
+        action: 'checkout',
+        loc,
+        requestTime: new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+        requestDate: new Date().toISOString().split('T')[0]
+      };
+      document.getElementById('outsideModalMsg').textContent =
+        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
+      openOutsideModal();
+      return;
+    }
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
+    const todayDate = new Date().toISOString().split('T')[0];
+    const res = await API.checkOut(user.id, user.name, todayDate);
+    if (res.success) {
+      const now = res.data && res.data.checkOut ? res.data.checkOut
+                : new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const ci  = document.getElementById('todayCheckIn').textContent;
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوات لەگەڵ!`);
+      // Update UI directly
+      btn.disabled = true;
+      btn.innerHTML = '🔴 چوونەدەرەوە';
+      document.getElementById('checkInBtn').disabled = true;
+      document.getElementById('statusDot').className = 'status-dot';
+      document.getElementById('statusDot').style.background = 'var(--blue-500)';
+      document.getElementById('statusText').textContent = `ڕۆژ تەواوبوو — ${ci} → ${now}`;
+      document.getElementById('todayCheckOut').textContent = now;
+      await loadAttendanceHistory();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('چوونەدەرەوە سەرکەوتوو نەبوو', e.message);
+    btn.disabled = false;
+    btn.innerHTML = '🔴 چوونەدەرەوە';
+  }
+}
+
+// ── Outside Office: Step management ──
+let _outsidePhotoBase64 = null;
+
+function goToOutsideStep2() {
+  document.getElementById('outsideStep1').style.display = 'none';
+  document.getElementById('outsideStep2').style.display = 'block';
+  document.getElementById('outsideNextBtn').style.display = 'none';
+  document.getElementById('outsideSendBtn').style.display = 'inline-flex';
+  const msg = document.getElementById('outsideModalMsg').textContent;
+  document.getElementById('outsideStep2Msg').textContent = msg;
+  // Reset fields
+  document.getElementById('outsideNote').value = '';
+  _outsidePhotoBase64 = null;
+  document.getElementById('photoThumb').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'none';
+  document.getElementById('photoPreview').style.display = 'block';
+}
+
+function onPhotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // استخدام readAsDataURL — أكثر توافقاً مع iOS القديم من ArrayBuffer+blobURL
+  const reader = new FileReader();
+
+  reader.onerror = () => {
+    Toast.error('هەڵە', 'وێنەکە نەخوێندرایەوە. دووبارە هەوڵبدەرەوە.');
+  };
+
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+
+    // قراءة EXIF من dataUrl — تحويله لArrayBuffer بطريقة آمنة
+    let orientation = 1;
+    try {
+      const binary = atob(dataUrl.split(',')[1]);
+      const bytes  = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      orientation = getExifOrientation(bytes.buffer);
+    } catch(_) { orientation = 1; }
+
+    const img = new Image();
+
+    img.onerror = () => {
+      Toast.error('هەڵە', 'وێنەکە بارنەبوو. جۆری وێنەکە پشکنە.');
+    };
+
+    img.onload = () => {
+      try {
+        const MAX_PX = 400; // كبّرنا قليلاً لجودة أفضل — الضغط JPEG يعوّض
+        const swapped = orientation >= 5 && orientation <= 8;
+        const srcW = swapped ? img.height : img.width;
+        const srcH = swapped ? img.width  : img.height;
+        let dw = srcW, dh = srcH;
+        if (dw > dh) { dh = Math.round(dh * MAX_PX / dw); dw = MAX_PX; }
+        else          { dw = Math.round(dw * MAX_PX / dh); dh = MAX_PX; }
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = dw;
+        canvas.height = dh;
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        applyExifOrientation(ctx, orientation, dw, dh);
+        ctx.drawImage(img, 0, 0, swapped ? dh : dw, swapped ? dw : dh);
+        ctx.restore();
+
+        // ── ضغط متعدد المراحل — الهدف: أقل من 50KB ──
+        const MAX_KB = 50;
+        let result, quality = 0.6;
+
+        if (!result || !result.startsWith('data:image/jpeg')) {
+          // أول محاولة
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        // إذا Safari رجع PNG أو الحجم كبير، نضغط أكثر
+        if (!result.startsWith('data:image/jpeg')) {
+          // Safari لا يدعم JPEG — نصغّر Canvas تدريجياً
+          let scale = 1.0;
+          let c2 = canvas;
+          let sizKB = result.length * 0.75 / 1024;
+          while (sizKB > MAX_KB && scale > 0.1) {
+            scale -= 0.15;
+            c2 = document.createElement('canvas');
+            c2.width  = Math.max(1, Math.round(dw * scale));
+            c2.height = Math.max(1, Math.round(dh * scale));
+            c2.getContext('2d').drawImage(canvas, 0, 0, c2.width, c2.height);
+            result = c2.toDataURL('image/png');
+            sizKB  = result.length * 0.75 / 1024;
+          }
+        } else {
+          // JPEG — نخفض الجودة حتى نصل للهدف
+          let sizKB = result.length * 0.75 / 1024;
+          while (sizKB > MAX_KB && quality > 0.05) {
+            quality = Math.max(0.05, quality - 0.08);
+            result  = canvas.toDataURL('image/jpeg', quality);
+            sizKB   = result.length * 0.75 / 1024;
+          }
+        }
+
+        _outsidePhotoBase64 = result;
+        const kb = Math.round(result.length * 0.75 / 1024);
+
+        document.getElementById('photoThumb').src = result;
+        document.getElementById('photoThumb').style.display = 'block';
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('retakeBtn').style.display = 'block';
+        document.getElementById('retakeBtn').textContent = `🔄 دووبارە وێنە بگرە (~${kb}KB)`;
+      } catch(err) {
+        Toast.error('هەڵە', 'کێشە لە پرۆسەکردنی وێنە: ' + err.message);
+      }
+    };
+
+    img.src = dataUrl; // مباشرةً بدون blobURL — أكثر استقراراً على iOS
+  };
+
+  reader.readAsDataURL(file); // بدلاً من readAsArrayBuffer
+}
+
+function getExifOrientation(buffer) {
+  try {
+    const view = new DataView(buffer);
+  if (view.getUint16(0, false) !== 0xFFD8) return 1;
+  const length = view.byteLength;
+  let offset = 2;
+  while (offset < length) {
+    if (view.getUint16(offset + 2, false) <= 8) return 1;
+    const marker = view.getUint16(offset, false);
+    offset += 2;
+    if (marker === 0xFFE1) {
+      if (view.getUint32(offset += 2, false) !== 0x45786966) return 1;
+      const little = view.getUint16(offset += 6, false) === 0x4949;
+      offset += view.getUint32(offset + 4, little);
+      const tags = view.getUint16(offset, little);
+      for (let i = 0; i < tags; i++) {
+        if (view.getUint16(offset + (i * 12), little) === 0x0112) {
+          return view.getUint16(offset + (i * 12) + 8, little);
+        }
+      }
+    } else if ((marker & 0xFF00) !== 0xFF00) break;
+    else offset += view.getUint16(offset, false);
+  }
+  return 1;
+  } catch(_) { return 1; }
+}
+
+function applyExifOrientation(ctx, orientation, w, h) {
+  switch (orientation) {
+    case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;
+    case 3: ctx.transform(-1, 0, 0, -1, w, h); break;
+    case 4: ctx.transform(1, 0, 0, -1, 0, h); break;
+    case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+    case 6: ctx.transform(0, 1, -1, 0, h, 0); break;
+    case 7: ctx.transform(0, -1, -1, 0, h, w); break;
+    case 8: ctx.transform(0, -1, 1, 0, 0, w); break;
+    default: break;
+  }
+}
+
+function retakePhoto() {
+  _outsidePhotoBase64 = null;
+  document.getElementById('outsidePhoto').value = '';
+  document.getElementById('photoThumb').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'none';
+  document.getElementById('photoPreview').style.display = 'block';
+}
+
+// Reset modal to step 1 when opened
+function openOutsideModal() {
+  document.getElementById('outsideStep1').style.display = 'block';
+  document.getElementById('outsideStep2').style.display = 'none';
+  document.getElementById('outsideNextBtn').style.display = 'inline-flex';
+  document.getElementById('outsideSendBtn').style.display = 'none';
+  openModal('outsideModal');
+}
+
+async function sendOutsideRequest() {
+  const user = Session.get();
+  if (!_pendingOutside) return;
+
+  const note  = document.getElementById('outsideNote').value.trim();
+  if (!note) { Toast.warning('تێبینی', 'تکایە هۆکارەکە بنووسە'); return; }
+
+  const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
+
+  const btn = document.getElementById('outsideSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
+
+  try {
+    const res = await API.addRequest({
+      employeeId: user.id,
+      name:       user.name,
+      type:       'attendance_outside',
+      date:       _pendingOutside.requestDate,
+      message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور | ${note}`,
+      extra:      JSON.stringify({
+        action:      _pendingOutside.action,
+        distance:    _pendingOutside.loc.distance,
+        note,
+        photoBase64: _outsidePhotoBase64,
+        requestTime: _pendingOutside.requestTime
+      })
+    });
+
+    if (res.success) {
+      const reqTime = _pendingOutside.requestTime;
+      const isCheckIn   = _pendingOutside.action === 'checkin';
+
+      Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
+      closeModal('outsideModal');
+
+      // ── تحديث الـ UI فوراً كأن الطلب مسجَّل ──
+      if (isCheckIn) {
+        document.getElementById('checkInBtn').disabled  = true;
+        document.getElementById('checkOutBtn').disabled = false;
+        document.getElementById('statusDot').className  = 'status-dot checked-in';
+        document.getElementById('statusText').textContent = `⏳ چاوەڕێی مۆڵەت — هاتنەژوورەوە ${reqTime}`;
+        document.getElementById('todayCheckIn').textContent  = `⏳ ${reqTime}`;
+        document.getElementById('todayCheckOut').textContent = '—';
+      } else {
+        document.getElementById('checkInBtn').disabled  = true;
+        document.getElementById('checkOutBtn').disabled = true;
+        document.getElementById('statusDot').className  = 'status-dot';
+        document.getElementById('statusDot').style.background = 'var(--gold-500)';
+        document.getElementById('statusText').textContent = `⏳ چاوەڕێی مۆڵەت — چوونەدەرەوە ${reqTime}`;
+        document.getElementById('todayCheckOut').textContent = `⏳ ${reqTime}`;
+      }
+    } else throw new Error(res.message);
+  } catch(e) {
+    Toast.error('نێردن سەرکەوتوو نەبوو', e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '📤 نێردنی داواکاری';
+    _pendingOutside = null;
+  }
+}
+
+async function showLatestAnnouncement() {
+  try {
+    const res = await API.getAnnouncements();
+    if (!res.success || !res.data || !res.data.length) return;
+
+    // أحدث إعلان
+    const ann = res.data[res.data.length - 1];
+    const annId = ann.id || ann.at || ann.AT || '';
+    if (!annId) return;
+
+    // تحقق إذا سبق إغلاقه
+    const dismissed = JSON.parse(localStorage.getItem('dismissedAnn') || '[]');
+    if (dismissed.includes(annId)) return;
+
+    // اعرضه
+    document.getElementById('annPopupTitle').textContent = ann.title || '';
+    document.getElementById('annPopupBody').textContent  = ann.message || '';
+    document.getElementById('annPopupOverlay').dataset.annId = annId;
+    document.getElementById('annPopupOverlay').style.display = 'flex';
+  } catch(e) { /* صامت */ }
+}
+
+function dismissAnnPopup() {
+  const overlay = document.getElementById('annPopupOverlay');
+  const annId   = overlay.dataset.annId;
+  if (annId) {
+    const dismissed = JSON.parse(localStorage.getItem('dismissedAnn') || '[]');
+    if (!dismissed.includes(annId)) {
+      dismissed.push(annId);
+      // احتفظ بآخر 50 فقط
+      if (dismissed.length > 50) dismissed.splice(0, dismissed.length - 50);
+      localStorage.setItem('dismissedAnn', JSON.stringify(dismissed));
+    }
+  }
+  overlay.style.display = 'none';
+}
+</script>
+</body>
+</html>

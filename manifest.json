@@ -1,6 +1,6 @@
 {
-  "name": "HR MAWARAN",
-  "short_name": "HR MAWARAN",
+  "name": "HR RC",
+  "short_name": "HR RC",
   "description": "سیستەمی بەڕێوەبردنی کارمەندان",
   "start_url": "attendance.html",
   "display": "standalone",

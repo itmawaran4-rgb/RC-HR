@@ -46,8 +46,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Search / filter listeners
   document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
-  document.getElementById('attEmpFilter')?.addEventListener('change', filterAttendance);
-  document.getElementById('attDateFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('attEmpFilter')?.addEventListener('input', debounce(filterAttendance, 300));
+  document.getElementById('attMonthFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('attDayFilter')?.addEventListener('change', filterAttendance);
   document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
 });
@@ -591,15 +592,137 @@ function renderAttendanceTable(data) {
   }).join(''));
 }
 
+function onAttMonthChange() {
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const daySel = document.getElementById('attDayFilter');
+  if (!daySel) return;
+
+  daySel.innerHTML = '<option value="">All Days</option>';
+
+  if (month) {
+    const [year, mon] = month.split('-').map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayStr  = String(d).padStart(2, '0');
+      const dateObj = new Date(year, mon - 1, d);
+      const dayName = dayNames[dateObj.getDay()];
+      const opt = document.createElement('option');
+      opt.value = `${month}-${dayStr}`;
+      opt.textContent = `${dayStr} — ${dayName}`;
+      daySel.appendChild(opt);
+    }
+  }
+
+  filterAttendance();
+}
+
+function clearAttFilters() {
+  document.getElementById('attEmpFilter').value   = '';
+  document.getElementById('attMonthFilter').value = '';
+  document.getElementById('attDayFilter').innerHTML = '<option value="">All Days</option>';
+  filterAttendance();
+}
+
 function filterAttendance() {
   const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
-  const date  = document.getElementById('attDateFilter')?.value || '';
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const day   = document.getElementById('attDayFilter')?.value  || ''; // "01"–"31"
+
   const filtered = AdminState.attendance.filter(r => {
-    const matchEmp  = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
-    const matchDate = !date  || r.date === date;
-    return matchEmp && matchDate;
+    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchMonth = !month || (r.date && r.date.startsWith(month));
+    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
+    return matchEmp && matchMonth && matchDay;
   });
   renderAttendanceTable(filtered);
+}
+
+function exportAttendanceExcel() {
+  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const day   = document.getElementById('attDayFilter')?.value  || '';
+
+  let data = AdminState.attendance.filter(r => {
+    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchMonth = !month || (r.date && r.date.startsWith(month));
+    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
+    return matchEmp && matchMonth && matchDay;
+  });
+
+  data = [...data].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return (a.employeeId || '').localeCompare(b.employeeId || '');
+  });
+
+  if (!data.length) {
+    Toast.warning('No Data', 'No attendance records match the current filter.');
+    return;
+  }
+
+  // ── Build worksheet rows ──
+  const headers = ['Employee ID', 'Employee Name', 'Date', 'Day', 'Check-In', 'Check-Out', 'Duration'];
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const rows = data.map(r => {
+    const d = new Date(r.date);
+    const dayName = !isNaN(d) ? dayNames[d.getDay()] : '—';
+    return [
+      r.employeeId || '',
+      r.name || '',
+      r.date || '',
+      dayName,
+      r.checkIn  || '—',
+      r.checkOut || '—',
+      calcDuration(r.checkIn, r.checkOut)
+    ];
+  });
+
+  const monthLabel = month
+    ? new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : 'All';
+  const filename = `Attendance_${month || 'All'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  // ── SheetJS export ──
+  if (window.XLSX) {
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 14 }, // Employee ID
+      { wch: 24 }, // Name
+      { wch: 13 }, // Date
+      { wch: 11 }, // Day
+      { wch: 11 }, // Check-In
+      { wch: 11 }, // Check-Out
+      { wch: 11 }  // Duration
+    ];
+
+    // Freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    const wb = XLSX.utils.book_new();
+    wb.Props = { Title: `Attendance Report — ${monthLabel}` };
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.writeFile(wb, filename);
+    Toast.success('Exported ✅', `${data.length} records → ${filename}`);
+  } else {
+    // Fallback: UTF-8 CSV with BOM (opens correctly in Excel)
+    const csvContent = '\uFEFF' +
+      [headers, ...rows]
+        .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename.replace('.xlsx', '.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Toast.success('Exported ✅', `${data.length} records saved as CSV`);
+  }
 }
 
 /* ══════════════════════════════════════════════

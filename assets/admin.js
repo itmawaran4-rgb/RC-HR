@@ -624,33 +624,25 @@ function clearAttFilters() {
   filterAttendance();
 }
 
-function filterAttendance() {
+function getAttFiltered() {
   const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
   const month = document.getElementById('attMonthFilter')?.value || '';
-  const day   = document.getElementById('attDayFilter')?.value  || ''; // "01"–"31"
+  const day   = parseInt(document.getElementById('attDayFilter')?.value) || 0;
 
-  const filtered = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
-    const matchMonth = !month || (r.date && r.date.startsWith(month));
-    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
+  return AdminState.attendance.filter(r => {
+    const matchEmp   = !empId  || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchMonth = !month  || (r.date && r.date.startsWith(month));
+    const matchDay   = !day    || parseInt((r.date || '').split('-')[2]) === day;
     return matchEmp && matchMonth && matchDay;
   });
-  renderAttendanceTable(filtered);
+}
+
+function filterAttendance() {
+  renderAttendanceTable(getAttFiltered());
 }
 
 function exportAttendanceExcel() {
-  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
-  const month = document.getElementById('attMonthFilter')?.value || '';
-  const day   = document.getElementById('attDayFilter')?.value  || '';
-
-  let data = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
-    const matchMonth = !month || (r.date && r.date.startsWith(month));
-    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
-    return matchEmp && matchMonth && matchDay;
-  });
-
-  data = [...data].sort((a, b) => {
+  let data = [...getAttFiltered()].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     return (a.employeeId || '').localeCompare(b.employeeId || '');
   });
@@ -660,7 +652,9 @@ function exportAttendanceExcel() {
     return;
   }
 
-  // ── Build worksheet rows ──
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const day   = document.getElementById('attDayFilter')?.value   || '';
+
   const headers = ['Employee ID', 'Employee Name', 'Date', 'Day', 'Check-In', 'Check-Out', 'Duration'];
   const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const rows = data.map(r => {
@@ -677,50 +671,31 @@ function exportAttendanceExcel() {
     ];
   });
 
-  const monthLabel = month
-    ? new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : 'All';
-  const filename = `Attendance_${month || 'All'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const label    = month ? (day ? `${month}-${day}` : month) : 'All';
+  const filename = `Attendance_${label}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-  // ── SheetJS export ──
   if (window.XLSX) {
-    const wsData = [headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Column widths
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
-      { wch: 14 }, // Employee ID
-      { wch: 24 }, // Name
-      { wch: 13 }, // Date
-      { wch: 11 }, // Day
-      { wch: 11 }, // Check-In
-      { wch: 11 }, // Check-Out
-      { wch: 11 }  // Duration
+      { wch: 14 }, { wch: 24 }, { wch: 13 },
+      { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }
     ];
-
-    // Freeze header row
     ws['!freeze'] = { xSplit: 0, ySplit: 1 };
-
     const wb = XLSX.utils.book_new();
-    wb.Props = { Title: `Attendance Report — ${monthLabel}` };
     XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
     XLSX.writeFile(wb, filename);
     Toast.success('Exported ✅', `${data.length} records → ${filename}`);
   } else {
-    // Fallback: UTF-8 CSV with BOM (opens correctly in Excel)
-    const csvContent = '\uFEFF' +
-      [headers, ...rows]
-        .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
-        .join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = filename.replace('.xlsx', '.csv');
+    const csv = '\uFEFF' + [headers, ...rows]
+      .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const a = Object.assign(document.createElement('a'), {
+      href:     URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
+      download: filename.replace('.xlsx', '.csv')
+    });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
     Toast.success('Exported ✅', `${data.length} records saved as CSV`);
   }
 }

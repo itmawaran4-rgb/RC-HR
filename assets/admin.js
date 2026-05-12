@@ -965,6 +965,79 @@ let allRequests = [];
 let currentReqFilter = 'all';
 
 // تحميل الطلبات في الخلفية عند فتح الصفحة
+function showPendingAlert(count) {
+  const existing = document.getElementById('pendingAlertOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pendingAlertOverlay';
+  overlay.style.cssText = `
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center;
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background:var(--bg-card);
+      border:1px solid var(--border-color);
+      border-top:4px solid var(--gold-500);
+      border-radius:16px;
+      padding:32px 36px;
+      min-width:320px; max-width:440px; width:90%;
+      box-shadow:0 24px 60px rgba(0,0,0,0.5);
+      position:relative;
+      text-align:center;
+      animation:pendingAlertIn .25s ease;
+    ">
+      <button onclick="document.getElementById('pendingAlertOverlay').remove()" style="
+        position:absolute; top:12px; right:14px;
+        background:none; border:none; cursor:pointer;
+        color:var(--text-muted); font-size:20px; line-height:1;
+        padding:4px 8px; border-radius:6px;
+        transition:background .15s, color .15s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='var(--text-primary)'"
+         onmouseout="this.style.background='none';this.style.color='var(--text-muted)'">✕</button>
+
+      <div style="font-size:48px; margin-bottom:16px; line-height:1;">📋</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">
+        Pending Requests
+      </div>
+      <div style="
+        font-size:42px; font-weight:800;
+        color:var(--gold-500); margin:12px 0;
+        text-shadow:0 0 20px rgba(245,158,11,0.4);
+      ">${count}</div>
+      <div style="font-size:14px; color:var(--text-muted); margin-bottom:24px;">
+        ${count > 1 ? `There are ${count} requests waiting for your review.` : `There is 1 request waiting for your review.`}
+      </div>
+      <button id="pendingAlertReviewBtn" style="
+        background:var(--gold-500); color:#000;
+        border:none; border-radius:8px;
+        padding:10px 28px; font-size:14px; font-weight:700;
+        cursor:pointer; transition:opacity .15s;
+      " onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+        Review Now →
+      </button>
+    </div>
+    <style>
+      @keyframes pendingAlertIn {
+        from { opacity:0; transform:scale(.92) translateY(-12px); }
+        to   { opacity:1; transform:scale(1)   translateY(0); }
+      }
+    </style>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('pendingAlertReviewBtn').addEventListener('click', () => {
+    overlay.remove();
+    showAdminTab('tab-requests', 'loadRequests');
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-tab="tab-requests"]')?.classList.add('active');
+  });
+}
+
 async function loadRequestsBackground() {
   try {
     const res = await API.getRequests({});
@@ -976,14 +1049,9 @@ async function loadRequestsBackground() {
     const badge = document.getElementById('pendingRequestsBadge');
     if (badge) badge.textContent = pending.length > 0 ? pending.length : '';
 
-    // إشعار Toast للطلبات المعلقة
+    // إشعار مركزي للطلبات المعلقة
     if (pending.length > 0) {
-      setTimeout(() => {
-        Toast.warning(
-          `📋 ${pending.length} Pending Request${pending.length > 1 ? 's' : ''}`,
-          'Click Requests tab to review'
-        );
-      }, 1200);
+      setTimeout(() => showPendingAlert(pending.length), 1200);
     }
 
     // حفظ البيانات لاستخدامها عند فتح التاب
